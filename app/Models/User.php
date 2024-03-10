@@ -35,11 +35,6 @@ class User extends Authenticatable
         return $this->hasMany(Task::class);
     }
 
-    public function hasTask(task $id)
-    {
-        return $this->tasks()->get()->where('id', $id)->exists();
-    }
-
     public function roles()
     {
         return $this->belongsToMany(Role::class);

@@ -22,7 +22,8 @@ class ListTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'page' => 'nullable|integer',
+            'per_page' => 'nullable|integer'
         ];
     }
 }

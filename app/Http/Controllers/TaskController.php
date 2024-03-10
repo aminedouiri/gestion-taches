@@ -39,6 +39,8 @@ class TaskController extends Controller
     public function index(ListTaskRequest $request)
     {
         try {
+            $perPage = $request->input('per_page', 10);
+            $page = $request->input('page', 1);
             $tasks = Task::whereNull('deleted_at');
             $user = Auth::user();
             if($user->hasRole('Administrateur')) {
@@ -47,9 +49,17 @@ class TaskController extends Controller
             else if($user->hasRole('Utilisateur')) {
                 $tasks = $tasks->where('user_id', $user->id);
             }
+            $totalTasks = $tasks->count();
+            $paginator = $tasks->paginate($perPage, ['*'], 'page', $page);
+            $currentPage = $paginator->currentPage();
+            $totalPages = $paginator->lastPage();
             DB::commit();
             Log::info('Task list retrieved successfully.');
-            return $this->sendSuccessResponse(TaskResource::collection($tasks->get()), 'Task list retrieved successfully');
+            return $this->sendSuccessResponse([
+                'tasks' => TaskResource::collection($paginator),
+                'current_page' => $currentPage,
+                'total_pages' => $totalPages,
+            ], 'Task list retrieved successfully');
         } catch (Exception $e) {
             DB::rollBack();
             Log::error('Task list retrieved failed.', ['error' => $e->getMessage()]);
@@ -62,6 +72,11 @@ class TaskController extends Controller
         try {
             $user = Auth::user();
             $task = Task::find($id);
+            if(!isset($task)) {
+                DB::commit();
+                Log::warning('Task not found');
+                return $this->sendErrorResponse('Task not found', 404);
+            }
             if($user->hasRole('Utilisateur') && $task->user_id != $user->id) {
                 Log::warning('Task not found');
                 return $this->sendErrorResponse('Task not found', 404);
@@ -79,12 +94,23 @@ class TaskController extends Controller
         DB::beginTransaction();
         try {
             $task = Task::find($id);
+            $data = $request->validated();
+            $user = Auth::user();
+            if(!isset($task)) {
+                DB::commit();
+                Log::warning('Task not found');
+                return $this->sendErrorResponse('Task not found', 404);
+            }
             if($user->hasRole('Utilisateur') && $task->user_id != $user->id) {
                 DB::commit();
                 Log::warning('Task not found');
                 return $this->sendErrorResponse('Task not found', 404);
             }
-            $task->update($request->validated());
+            if($user->hasRole('Utilisateur')) {
+                $data = $request->validated();
+                unset($data['user_id']);
+            }
+            $task->update($data);
             DB::commit();
             Log::info('Task updated successfully.', ['task' => $task->titre]);
             return $this->sendSuccessResponse($task, 'User created successfully!', 201);
@@ -107,6 +133,11 @@ class TaskController extends Controller
                     return $this->sendErrorResponse('Task not found', 404);
                 }
             }
+            if(!isset($task)) {
+                DB::commit();
+                Log::warning('Task not found');
+                return $this->sendErrorResponse('Task not found', 404);
+            }
             $task->delete();
             DB::commit();
             Log::info('Task deleted successfully.', ['task' => $task->titre]);
@@ -118,13 +149,22 @@ class TaskController extends Controller
         }
     }
 
-    public function deleted(Request $request)
+    public function deleted(ListTaskRequest $request)
     {
         try {
-            $tasks = Task::onlyTrashed()->get();
+            $perPage = $request->input('per_page', 10);
+            $page = $request->input('page', 1);
+            $tasks = Task::onlyTrashed();
             DB::commit();
             Log::info('Task deleted list retreived successfully.');
-            return $this->sendSuccessResponse(TaskResource::collection($tasks), 'Task deleted list retreived successfully');
+            $paginator = $tasks->paginate($perPage, ['*'], 'page', $page);
+            $currentPage = $paginator->currentPage();
+            $totalPages = $paginator->lastPage();
+            return $this->sendSuccessResponse([
+                'tasks' => TaskResource::collection($paginator),
+                'current_page' => $currentPage,
+                'total_pages' => $totalPages,
+            ], 'Task list retrieved successfully');
         } catch (Exception $e) {
             DB::rollBack();
             Log::error('Task deleted list retreived failed.', ['error' => $e->getMessage()]);

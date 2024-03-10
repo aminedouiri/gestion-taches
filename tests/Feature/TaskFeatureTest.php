@@ -34,18 +34,30 @@ class TaskFeatureTest extends TestCase
             ->getJson('/api/tasks');
 
         $response->assertStatus(200)
-            ->assertJsonStructure([
-                'data' => [
+        ->assertJsonStructure([
+            'data' => [
+                'tasks' => [
                     '*' => [
                         'id',
-                        'title',
+                        'titre',
                         'description',
                         'statut',
                         'date d\'échéance',
-                        'user_id',
-                    ]
-                ]
-            ]);
+                        'user' => [
+                            'id',
+                            'name',
+                            'email',
+                            'email_verified_at',
+                            'created_at',
+                            'updated_at',
+                        ],
+                    ],
+                ],
+                'current_page',
+                'total_pages',
+            ],
+            'message',
+        ]);
     }
     public function test_show_method_returns_task_by_id()
     {
@@ -66,7 +78,7 @@ class TaskFeatureTest extends TestCase
                 'description',
                 'statut',
                 'date d\'échéance',
-                'user_id',
+                'user',
                 'created_at',
                 'updated_at',
                 'deleted_at',
@@ -92,7 +104,7 @@ class TaskFeatureTest extends TestCase
                     'description',
                     'statut',
                     'date d\'échéance',
-                    'user_id',
+                    'user',
                 ]
             ]);
     }
@@ -114,9 +126,8 @@ class TaskFeatureTest extends TestCase
                     'id',
                     'titre',
                     'description',
-                    'statut',
                     'date d\'échéance',
-                    'user_id',
+                    'statut',
                 ]
             ]);
     }
@@ -136,17 +147,29 @@ class TaskFeatureTest extends TestCase
                         ->getJson('/api/tasks/deleted');
 
         $response->assertStatus(200)
-            ->assertJsonStructure([
-                'data' => [
+        ->assertJsonStructure([
+            'data' => [
+                'tasks' => [
                     '*' => [
                         'id',
                         'titre',
                         'description',
                         'statut',
                         'date d\'échéance',
-                        'user_id',
-                    ]
-                ]
-            ]);
+                        'user' => [
+                            'id',
+                            'name',
+                            'email',
+                            'email_verified_at',
+                            'created_at',
+                            'updated_at',
+                        ],
+                    ],
+                ],
+                'current_page',
+                'total_pages',
+            ],
+            'message',
+        ]);
     }
 }
